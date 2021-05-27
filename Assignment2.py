@@ -3,6 +3,7 @@ from flask import request
 from flask import jsonify, abort
 from transformers.pipelines import pipeline
 import sqlite3
+import os
 
 # Create my flask app
 app = Flask(__name__)
@@ -216,4 +217,4 @@ def main():
 if __name__ == '__main__':
     # Run our Flask app and start listening for requests
     main()
-    app.run(host='127.0.0.1', port=8000, threaded=True, debug=True)
+    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
