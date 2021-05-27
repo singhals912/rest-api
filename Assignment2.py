@@ -3,6 +3,7 @@ from flask import request
 from flask import jsonify, abort
 from transformers.pipelines import pipeline
 import sqlite3
+import os
 
 # Create my flask app
 app = Flask(__name__)
