@@ -216,4 +216,4 @@ def main():
 if __name__ == '__main__':
     # Run our Flask app and start listening for requests
     main()
-    app.run(host='127.0.0.1', port=8000, threaded=True, debug=True)
+    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
