@@ -12,7 +12,7 @@ app = Flask(__name__)
 # Define a handler for the / path, which returns "Hello World"
 @app.route("/")
 def hello_world():
-    return "<p>Hello, World!</p>"
+    return "<H1>Welcome to the application. Please access the functionality by making REST API calls !</H1>"
 
 # Define a handler for the /answer path, which
 # processes a JSON payload with a question and
