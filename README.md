@@ -44,5 +44,17 @@ The application allows a user to perform the following operations user JSON base
 The application uses a lot of python packages and libraries. All the required packages are listed in the file **requirements.txt**. A user can simply executing the following command - <br>
 ```$ pip install -r requirements.txt``` and voila! all the program's dependencies will be downloaded, installed and ready to be used by the application.
 
+The requirements.txt file in current project installs -
+* transformer - Transformers (formerly known as pytorch-transformers and pytorch-pretrained-bert) provides general-purpose architectures (BERT, GPT-2, RoBERTa, XLM, DistilBert, XLNet…) for Natural Language Understanding (NLU) and Natural Language Generation (NLG) with over 32+ pretrained models in 100+ languages and deep interoperability between Jax, PyTorch and TensorFlow. Importing these pretrained models which will allow our application to perform question answering task <br>
+      
+* PyTorch - PyTorch is based on Torch library used for applications such as computer vision and NLP. A number of HuggingFace's transformers are built on top of PyTorch. <br>
+      
+* Flask - Flask is a micro web framework written in Python. We use it to render UI and route various requests.
+
 ### Build and Run the API locally via Docker or Flask
 A user can download this repository and after installing all the dependencies listed in requirement.txt, they can trigger the python code. Requests can be sent using application like 'Postman', instead of the application url, the user can hit their localhost and can continue to send the request following the routes specified above.
+
+### Continuous Integration & Continuous Build (CI/CD)
+Our application has been deployed to follow CI/CD principles and follows a consistent and automated way to build, package and deploy the application.<br>
+We accomplish this by establishing workflow to Google Cloud using Actions in our GitHub. A workflow is a configurable automated process made up of one or more jobs. We have created a YAML file to define your workflow configuration. Once this workflow is established, any change in our repository sends an update request to our application deployed on google cloud. Below is how our workflow looks -<br>
+<img src="/images/Build Deploy.PNG">
