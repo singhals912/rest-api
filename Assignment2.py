@@ -1,220 +1,249 @@
-from flask import Flask
-from flask import request
-from flask import jsonify, abort
-from transformers.pipelines import pipeline
-import sqlite3
 import os
+import time
+import sqlite3
+
+from transformers.pipelines import pipeline
+from flask import Flask
+from flask import request, jsonify
+
+# --------------#
+#  VARIABLES   #
+# --------------#
 
 # Create my flask app
 app = Flask(__name__)
 
+# Create a variable that will hold our models in memory
+models = {}
 
-# Define a handler for the / path, which returns "Hello World"
+# The database file
+db = 'answers.db'
+
+
+# --------------#
+#    ROUTES    #
+# --------------#
+
+# Define a handler for the / path, which
+# returns a message and allows Cloud Run to
+# health check the API.
 @app.route("/")
 def hello_world():
-    return "<H1>Welcome to the application. Please access the functionality by making REST API calls !</H1>"
+    return "<p>The question answering API is healthy!</p>"
+
 
 # Define a handler for the /answer path, which
 # processes a JSON payload with a question and
 # context and returns an answer using a Hugging
 # Face model.
-
-@app.route("/models", methods=['GET','PUT','DELETE'])
-def models():
-    print("API CALL RECEIVED")
-    #Connect to database
-    conn = sqlite3.connect('model_answer_db.db')
-    #Create a cursor
-    c = conn.cursor()
-    c.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    print("Current list of tables ",c.fetchall())
-    #code for models
-    if request.method == 'GET':
-        #Return all models
-        payload = fetch_model()
-        return payload
-
-    if request.method == 'PUT':
-        #fetch arguments passed by request
-        data = request.json
-        print("Request received is ",data)
-        r_name =  data['name']
-        r_tokenizer = data['tokenizer']
-        r_model = data['model']
-
-        #Add a new model and return updated model list
-        #c.execute("SELECT name FROM sqlite_master WHERE type='table';")
-        #print(c.fetchall())
-        c.execute("INSERT INTO models VALUES(?,?,?)",(r_name,r_tokenizer,r_model))
-        conn.commit()
-        conn.close()
-        #Get updated list of models
-        payload = fetch_model()
-        return payload
-
-    if request.method == 'DELETE':
-        #print(request)
-        # Code to delete the model received in the request
-        del_model = request.args.get('model')
-        print("Model to be deleted is-",del_model)
-        c.execute("DELETE FROM models WHERE name = (?)", (del_model,))
-        conn.commit()
-        # # c.execute("Select * from models where name = (?)", (del_model,))
-        # c.execute("Select * from models")
-        # print(c.fetchall())
-        conn.close()
-        # Get updated list of models
-        payload = fetch_model()
-        return payload
-
-    #Commit the db
-    conn.commit()
-    #Close connection
-    conn.close()
-
-def fetch_model ():
-    # Return all models
-    conn = sqlite3.connect('model_answer_db.db')
-    c = conn.cursor()
-    c.execute("Select * from models")
-    fetched_models = c.fetchall()
-    payload = []
-    content = {}
-    for results in fetched_models:
-        content = {'name': results[0], 'tokenizer': results[1], 'model': results[2]}
-        payload.append(content)
-        content = {}
-    return jsonify(payload)
-
-@app.route("/answer", methods=['POST','GET'])
+@app.route("/answer", methods=['POST'])
 def answer():
-    print("ANSWER.............")
-    print(request.method)
-    import time
-    if request.method == 'POST':
-        # Get the request body data
-        print("API call receoved to answer")
-        req_model = request.args.get('model')
-        data = request.json
-        req_question = data['question']
-        req_context = data['context']
-        print(data)
-        print(req_model)
-        #Connect to database
-        conn = sqlite3.connect('model_answer_db.db')
-        # Create a cursor
-        c = conn.cursor()
+    # Get the request body data
+    data = request.json
 
-        if req_model == None:
-            print("No model specified in the request. Using default model")
-            req_model = "distilbert-base-uncased-distilled-squad"
-            req_tokenizer = "distilbert-base-uncased-distilled-squad"
-            req_name = "distilbert-base-uncased-distilled-squad"
-        else:
-            # Get model from database. If model is not found, then give HTTP response error
-            c.execute("Select * from models where name = (?)", (req_model,))
-            fetched_model = c.fetchone()
-            print(fetched_model)
-            if fetched_model == None:
-                print("Model not found in the database")
-                abort(404, description="Model not found in the database. Please try with a different model")
-            else:
-                req_name = fetched_model[0]
-                req_tokenizer = fetched_model[1]
-                req_model = fetched_model[2]
+    # Validate model name if given
+    if request.args.get('model') != None:
+        if not validate_model(request.args.get('model')):
+            return "Model not found", 400
 
-        # Import model
-        print("Answer using model - ",req_model)
-        hg_comp = pipeline('question-answering', model=req_model, tokenizer=req_tokenizer)
+    # Answer the question
+    answer, model_name = answer_question(request.args.get('model'),
+                                         data['question'], data['context'])
+    timestamp = int(time.time())
 
-        # Answer the answer
-        answer = hg_comp({'question':req_question, 'context':req_context})['answer']
-        print("")
+    # Insert our answer in the database
+    con = sqlite3.connect(db)
+    cur = con.cursor()
+    sql = "INSERT INTO answers VALUES ('{question}','{context}','{model}','{answer}',{timestamp})"
+    cur.execute(sql.format(
+        question=data['question'].replace("'", "''"),
+        context=data['context'].replace("'", "''"),
+        model=model_name,
+        answer=answer,
+        timestamp=str(timestamp)))
+    con.commit()
+    con.close()
 
-        #Generate timestamp
-        timestamp = int(time.time())
-        print(timestamp)
+    # Create the response body.
+    out = {
+        "question": data['question'],
+        "context": data['context'],
+        "answer": answer,
+        "model": model_name,
+        "timestamp": timestamp
+    }
 
-        #Enter the answer in the answers table
-        c.execute("INSERT INTO answers VALUES(?,?,?,?,?)", (timestamp, req_name, answer, req_question, req_context))
+    return jsonify(out)
 
-        # Commit the db
-        conn.commit()
-        # Close connection
-        conn.close()
-        # Create the response body.
-        out = {
-            "timestamp":timestamp,
-            "model":req_model,
-            "answer": answer,
-            "question": data['question'],
-            "context": data['context'],
-        }
 
-        return jsonify(out)
+# List historical answers from the database.
+@app.route("/answer", methods=['GET'])
+def list_answer():
+    # Validate timestamps
+    if request.args.get('start') == None or request.args.get('end') == None:
+        return "Query timestamps not provided", 400
 
-    if request.method == 'GET':
-        req_model = request.args.get('model')
-        req_start_time = request.args.get('start')
-        req_end_time = request.args.get('end')
-        conn = sqlite3.connect('model_answer_db.db')
-        c = conn.cursor()
-        if req_model == None:
-            # Return all answers within the start and end timestamp
-            c.execute("Select * from answers where timestamp BETWEEN (?) AND (?)",(req_start_time,req_end_time ))
-            fetched_models = c.fetchall()
-            payload = []
-            content = {}
-            for results in fetched_models:
-                content = {'timestamp': results[0], 'model': results[1], 'answer': results[2],'question': results[3], 'context': results[4]}
-                payload.append(content)
-                content = {}
-            out = jsonify(payload)
-        else:
-            # Return all answers within the start and end timestamp
-            conn = sqlite3.connect('model_answer_db.db')
-            c = conn.cursor()
-            c.execute("Select * from answers where model = (?) AND (timestamp BETWEEN (?) AND (?))",(req_model,req_start_time,req_end_time ))
-            fetched_models = c.fetchall()
-            payload = []
-            content = {}
-            for results in fetched_models:
-                content = {'timestamp': results[0], 'model': results[1], 'answer': results[2],'question': results[3], 'context': results[4]}
-                payload.append(content)
-                content = {}
-            out = jsonify(payload)
-        return out
-        # Commit the db
-        conn.commit()
-        # Close connection
-        conn.close()
-    return "<p>Hello, World!</p>"
+    # Prep SQL query
+    if request.args.get('model') != None:
+        sql = "SELECT * FROM answers WHERE timestamp >= {start} AND timestamp <= {end} AND model == '{model}'"
+        sql_rev = sql.format(start=request.args.get('start'),
+                             end=request.args.get('end'), model=request.args.get('model'))
+    else:
+        sql = 'SELECT * FROM answers WHERE timestamp >= {start} AND timestamp <= {end}'
+        sql_rev = sql.format(start=request.args.get('start'), end=request.args.get('end'))
 
-def main():
-    print("Welcome to main function")
-    # Connect to database
-    conn = sqlite3.connect('model_answer_db.db')
+    # Query the database
+    con = sqlite3.connect(db)
+    cur = con.cursor()
+    out = []
+    for row in cur.execute(sql_rev):
+        out.append({
+            "question": row[0],
+            "context": row[1],
+            "answer": row[2],
+            "model": row[3],
+            "timestamp": row[4]
+        })
+    con.close()
 
-    # Create a cursor
-    c = conn.cursor()
+    return jsonify(out)
 
-    # Create a table
-    c.execute("""CREATE TABLE IF NOT EXISTS models (
-            name varchar(100), tokenizer varchar(100), model varchar(100)
-    )""")
 
-    c.execute("""CREATE TABLE IF NOT EXISTS answers (
-            timestamp DateTime, model varchar(100), answer varchar(500), question varchar(500), context varchar(500)
-    )""")
+# List models currently available for inference
+@app.route("/models", methods=['GET'])
+def list_model():
+    # Get the loaded models
+    models_loaded = []
+    for m in models['models']:
+        models_loaded.append({
+            'name': m['name'],
+            'tokenizer': m['tokenizer'],
+            'model': m['model']
+        })
 
-    c.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    print(c.fetchall())
-    #commit and close
-    conn.commit()
-    conn.close()
+    return jsonify(models_loaded)
 
-# Run if running "python answer.py"
+
+# Add a model to the models available for inference
+@app.route("/models", methods=['PUT'])
+def add_model():
+    # Get the request body data
+    data = request.json
+
+    # Load the provided model
+    if not validate_model(data['name']):
+        models_rev = []
+        for m in models['models']:
+            models_rev.append(m)
+        models_rev.append({
+            'name': data['name'],
+            'tokenizer': data['tokenizer'],
+            'model': data['model'],
+            'pipeline': pipeline('question-answering',
+                                 model=data['model'],
+                                 tokenizer=data['tokenizer'])
+        })
+        models['models'] = models_rev
+
+    # Get the loaded models
+    models_loaded = []
+    for m in models['models']:
+        models_loaded.append({
+            'name': m['name'],
+            'tokenizer': m['tokenizer'],
+            'model': m['model']
+        })
+
+    return jsonify(models_loaded)
+
+
+# Delete a model from the models available for inference
+@app.route("/models", methods=['DELETE'])
+def delete_model():
+    # Validate model name if given
+    if request.args.get('model') == None:
+        return "Model name not provided in query string", 400
+
+    # Error if trying to delete default model
+    if request.args.get('model') == models['default']:
+        return "Can't delete default model", 400
+
+    # Load the provided model
+    models_rev = []
+    for m in models['models']:
+        if m['name'] != request.args.get('model'):
+            models_rev.append(m)
+    models['models'] = models_rev
+
+    # Get the loaded models
+    models_loaded = []
+    for m in models['models']:
+        models_loaded.append({
+            'name': m['name'],
+            'tokenizer': m['tokenizer'],
+            'model': m['model']
+        })
+
+    return jsonify(models_loaded)
+
+
+# --------------#
+#  FUNCTIONS   #
+# --------------#
+
+# Validate that a model is available
+def validate_model(model_name):
+    # Get the loaded models
+    model_names = []
+    for m in models['models']:
+        model_names.append(m['name'])
+
+    return model_name in model_names
+
+
+# Answer a question with a given model name
+def answer_question(model_name, question, context):
+    # Get the right model pipeline
+    if model_name == None:
+        for m in models['models']:
+            if m['name'] == models['default']:
+                model_name = m['name']
+                hg_comp = m['pipeline']
+    else:
+        for m in models['models']:
+            if m['name'] == model_name:
+                hg_comp = m['pipeline']
+
+    # Answer the answer
+    answer = hg_comp({'question': question, 'context': context})['answer']
+
+    return answer, model_name
+
+
+# Run main by default if running "python answer.py"
 if __name__ == '__main__':
-    # Run our Flask app and start listening for requests
-    main()
-    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+    # Initialize our default model.
+    models = {
+        "default": "distilled-bert",
+        "models": [
+            {
+                "name": "distilled-bert",
+                "tokenizer": "distilbert-base-uncased-distilled-squad",
+                "model": "distilbert-base-uncased-distilled-squad",
+                "pipeline": pipeline('question-answering',
+                                     model="distilbert-base-uncased-distilled-squad",
+                                     tokenizer="distilbert-base-uncased-distilled-squad")
+            }
+        ]
+    }
+
+    # Database setup
+    con = sqlite3.connect(db)
+    cur = con.cursor()
+    cur.execute('''CREATE TABLE answers
+               (question text, context text, model text, answer text, timestamp int)''')
+    con.commit()
+    con.close()
+
+    # Run our Flask app and start listening for requests!
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 8080)), threaded=True)
