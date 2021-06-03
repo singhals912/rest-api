@@ -1,6 +1,5 @@
 import os
 import time
-import sqlite3
 import psycopg2
 from transformers.pipelines import pipeline
 from flask import Flask
@@ -14,7 +13,7 @@ from flask import request, jsonify
 models = {}
 
 # The database file
-db = 'answers.db'
+# db = 'answers.db'
 
 def create_app():
     # Create my flask app
@@ -58,7 +57,7 @@ def create_app():
         timestamp = int(time.time())
 
         # Insert our answer in the database
-        con = sqlite3.connect(db)
+        con = psycopg2.connect(db_connect_string)
         cur = con.cursor()
         sql = "INSERT INTO answers VALUES ('{question}','{context}','{model}','{answer}',{timestamp})"
         cur.execute(sql.format(
@@ -99,7 +98,7 @@ def create_app():
             sql_rev = sql.format(start=request.args.get('start'), end=request.args.get('end'))
 
         # Query the database
-        con = sqlite3.connect(db)
+        con = psycopg2.connect(db_connect_string)
         cur = con.cursor()
         out = []
         for row in cur.execute(sql_rev):
@@ -274,8 +273,8 @@ if __name__ == '__main__':
     # Connect to your postgres DB
     con = psycopg2.connect(db_connect_string)
     cur = con.cursor()
-    cur.execute('''CREATE TABLE answers
-               (question text, context text, model text, answer text, timestamp int)''')
+    cur.execute("""CREATE TABLE IF NOT EXISTS answers 
+            (question text, context text, model text, answer text, timestamp int)""")
     con.commit()
     con.close()
 
