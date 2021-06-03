@@ -42,11 +42,7 @@ jobs:
         service: ${{ env.SERVICE }}
         image: gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{  github.sha }}
         region: ${{ env.REGION }}
-        sslrootcert: ${{ secrets.PG_SSLROOTCERT }}
-        sslcert: ${{ secrets.PG_SSLCERT }}
-        sslkey: ${{ secrets.PG_SSLKEY }}
-        hostaddr: ${{ secrets.PG_HOST }}
-        password: ${{ secrets.PG_PASSWORD }}
+        env_vars: PG_SSLROOTCERT= ${{ secrets.PG_SSLROOTCERT }}, PG_SSLCERT= ${{ secrets.PG_SSLCERT }}, PG_SSLKEY= ${{ secrets.PG_SSLKEY }}, PG_HOST= ${{ secrets.PG_HOST }}
         
 
     - name: Show Output
