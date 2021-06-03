@@ -230,7 +230,7 @@ def answer_question(model_name, question, context):
 if __name__ == '__main__':
 
     #Create our Flask app
-    #app = create_app()
+    # app = create_app()
 
     # Initialize our default model.
     models = {
@@ -248,11 +248,44 @@ if __name__ == '__main__':
     }
 
     # Database setup
+    #Read env variables
+    sslrootcert_var = os.environ.get('PG_SSLROOTCERT')
+    sslrootcert_var = sslrootcert_var.replace('@', '=')
+
+    sslcert_var = os.environ.get('PG_SSLCERT')
+    sslcert_var = sslcert_var.replace('@', '=')
+
+    sslkey_var = os.environ.get('PG_SSLKEY')
+    sslkey_var = sslkey_var.replace('@', '=')
+
+    #Write them in a file
+    file = open("/server-ca.pem", "w")
+    file.write(sslrootcert_var)
+    file.close()
+    os.chmod("/server-ca.pem", stat.S_IRUSR)
+    os.chmod("/server-ca.pem", stat.S_IWUSR)
+    sslrootcert = "sslrootcert=/server-ca.pem"
+
+    file = open("/client-cert.pem", "w")
+    file.write(sslcert_var)
+    file.close()
+    os.chmod("/client-cert.pem", stat.S_IRUSR)
+    os.chmod("/client-cert.pem", stat.S_IWUSR)
+    sslcert = "sslcert=/client-cert.pem"
+
+    file = open("/client-key.pem", "w")
+    file.write(sslkey_var)
+    file.close()
+    os.chmod("/client-key.pem", stat.S_IRUSR)
+    os.chmod("/client-key.pem", stat.S_IWUSR)
+    sslkey = "sslkey=/client-key.pem"
+
+
     # Format DB connection information
     sslmode = "sslmode=verify-ca"
-    sslrootcert = "sslrootcert={}".format(os.environ.get('PG_SSLROOTCERT'))
-    sslcert = "sslcert={}".format(os.environ.get('PG_SSLCERT'))
-    sslkey = "sslkey={}".format(os.environ.get('PG_SSLKEY'))
+    # sslrootcert = "sslrootcert=/server-ca.pem"
+    # sslcert = "sslcert={}".format(os.environ.get('PG_SSLCERT'))
+    # sslkey = "sslkey={}".format(os.environ.get('PG_SSLKEY'))
     hostaddr = "hostaddr={}".format(os.environ.get('PG_HOST'))
     user = "user=postgres"
     password = "password={}".format(os.environ.get('PG_PASSWORD'))
@@ -277,8 +310,7 @@ if __name__ == '__main__':
             (question text, context text, model text, answer text, timestamp int)""")
     con.commit()
     con.close()
-    
-    #Create our Flask app
+    # Create our Flask app
     app = create_app()
     # Run our Flask app and start listening for requests!
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 8080)), threaded=True)
