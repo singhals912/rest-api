@@ -230,7 +230,7 @@ def answer_question(model_name, question, context):
 if __name__ == '__main__':
 
     #Create our Flask app
-    app = create_app()
+    #app = create_app()
 
     # Initialize our default model.
     models = {
@@ -277,6 +277,8 @@ if __name__ == '__main__':
             (question text, context text, model text, answer text, timestamp int)""")
     con.commit()
     con.close()
-
+    
+    #Create our Flask app
+    app = create_app()
     # Run our Flask app and start listening for requests!
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 8080)), threaded=True)
