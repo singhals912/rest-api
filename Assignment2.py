@@ -13,9 +13,6 @@ import stat
 # Create a variable that will hold our models in memory
 models = {}
 
-# The database file
-# db = 'answers.db'
-
 def create_app():
     # Create my flask app
     app = Flask(__name__)
