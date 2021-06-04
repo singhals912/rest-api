@@ -13,6 +13,21 @@ import stat
 # Create a variable that will hold our models in memory
 models = {}
 
+#Initialize our default model
+models = {
+    "default": "distilled-bert",
+    "models": [
+        {
+            "name": "distilled-bert",
+            "tokenizer": "distilbert-base-uncased-distilled-squad",
+            "model": "distilbert-base-uncased-distilled-squad",
+            "pipeline": pipeline('question-answering',
+                                 model="distilbert-base-uncased-distilled-squad",
+                                 tokenizer="distilbert-base-uncased-distilled-squad")
+        }
+    ]
+}
+
 def create_app():
     # Create my flask app
     app = Flask(__name__)
@@ -228,22 +243,7 @@ def answer_question(model_name, question, context):
 if __name__ == '__main__':
 
     #Create our Flask app
-    # app = create_app()
-
-    # Initialize our default model.
-    models = {
-        "default": "distilled-bert",
-        "models": [
-            {
-                "name": "distilled-bert",
-                "tokenizer": "distilbert-base-uncased-distilled-squad",
-                "model": "distilbert-base-uncased-distilled-squad",
-                "pipeline": pipeline('question-answering',
-                                     model="distilbert-base-uncased-distilled-squad",
-                                     tokenizer="distilbert-base-uncased-distilled-squad")
-            }
-        ]
-    }
+    app = create_app()
 
     # Database setup
     #Read env variables
@@ -308,7 +308,6 @@ if __name__ == '__main__':
             (question text, context text, model text, answer text, timestamp int)""")
     con.commit()
     con.close()
-    # Create our Flask app
-    app = create_app()
+    
     # Run our Flask app and start listening for requests!
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 8080)), threaded=True)
