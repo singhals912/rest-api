@@ -12,7 +12,7 @@ if not os.path.exists('.ssl'):
     os.makedirs('.ssl')
 
 filecontents = os.environ.get('GCS_CREDS')
-decoded_creds = decoded_creds.replace('@','=')
+decoded_creds = filecontents.replace('@','=')
 decoded_creds = pybase64.b64decode(filecontents.decode('utf-8'))
 with open('/app/creds.json', 'w') as f:
     f.write(decoded_creds)
