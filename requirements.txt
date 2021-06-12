@@ -6,3 +6,4 @@ psycopg2-binary
 pybase64
 werkzeug
 gcsfs
+logging
