@@ -1,6 +1,6 @@
 import os
 import time
-import base64
+import pybase64
 from werkzeug.utils import secure_filename
 from transformers.pipelines import pipeline
 from flask import Flask
@@ -13,7 +13,7 @@ if not os.path.exists('.ssl'):
 
 filecontents = os.environ.get('GCS_CREDS')
 decoded_creds = decoded_creds.replace('@','=')
-decoded_creds = base64.b64decode(filecontents.decode('utf-8'))
+decoded_creds = pybase64.b64decode(filecontents.decode('utf-8'))
 with open('/app/creds.json', 'w') as f:
     f.write(decoded_creds)
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/app/creds.json'
