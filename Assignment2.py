@@ -6,6 +6,8 @@ from flask import Flask
 from flask import request, jsonify
 import stat
 import pybase64
+from google.cloud import storage
+import logging
 from werkzeug.utils import secure_filename
 
 # ---------------------#
@@ -60,8 +62,24 @@ def create_app():
     def upload_file():
         f = request.files['file']
         print("File path where file is uplaoded is ",os.path)
-        f.save(os.path.join)('/tmp', secure_filename(f.filename))
-        return jsonify({"upload_status": 'file uploaded successfully'})
+        #f.save(os.path.join)('/tmp', secure_filename(f.filename))
+        f.save(secure_filename(f.filename))
+        # creating a GCS client
+        client = storage.Client()
+
+        # Retrieving the bucket
+        bucket = client.get_bucket('mgmt590-assgn4')
+
+        # Push our file to the bucket
+        try:
+            #
+            blob = bucket.blob(secure_filename(f.filename))
+            blob.upload_from_filename(filename=secure_filename(f.filename))
+            # bucket.blob(os.path.join('/tmp/', secure_filename(f.filename)))
+        except:
+            return "Failed to upload file " + secure_filename(f.filename)
+        else:
+            return jsonify({"upload_status": 'file uploaded successfully'})
 
     @app.route("/answer", methods=['POST'])
     def answer():
@@ -260,12 +278,13 @@ if __name__ == '__main__':
     filecontents = os.environ.get('GCS_CREDS')
     decoded_creds = filecontents.replace('@', '=')
     decoded_creds = pybase64.b64decode(filecontents)
-
-    file = open("/app/creds.json", "w")
-    file.write(str(decoded_creds))
-    file.close()
     os.chmod("/app/creds.json", stat.S_IRUSR)
     os.chmod("/app/creds.json", stat.S_IWUSR)
+
+    file = open("/app/creds.json", "w")
+    file.write(decoded_creds.decode("utf-8"))
+    file.close()
+
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/app/creds.json'
 
     # with open('/app/creds.json', 'w') as f:
