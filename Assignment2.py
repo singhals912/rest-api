@@ -275,23 +275,22 @@ if __name__ == '__main__':
 
     # Database setup
     # Read env variables
-    filecontents = os.environ.get('GCS_CREDS')
-    decoded_creds = filecontents.replace('@', '=')
+    # Get GCS credentials
+    filecontents = os.environ.get('GCS_CREDS').replace("@", "=")
     decoded_creds = base64.b64decode(filecontents)
+    with open('./app/creds.json', 'w') as f1:
+        f1.write(decoded_creds.decode("utf-8"))
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = './app/creds.json'
     # os.chmod("/app/creds.json", stat.S_IRUSR)
     # os.chmod("/app/creds.json", stat.S_IWUSR)
 
-    file = open("/app/creds.json", "w")
-    file.write(decoded_creds.decode("utf-8"))
-    file.close()
-
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = './app/creds.json'
+    # file = open("/app/creds.json", "w")
+    # file.write(decoded_creds.decode("utf-8"))
+    # file.close()
 
     # with open('/app/creds.json', 'w') as f:
     #     f.write(str(decoded_creds))
     #     file.close()
-
-
     sslrootcert_var = os.environ.get('PG_SSLROOTCERT')
     sslrootcert_var = sslrootcert_var.replace('@', '=')
 
