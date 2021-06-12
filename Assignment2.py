@@ -260,9 +260,18 @@ if __name__ == '__main__':
     filecontents = os.environ.get('GCS_CREDS')
     decoded_creds = filecontents.replace('@', '=')
     decoded_creds = pybase64.b64decode(filecontents)
-    with open('/app/creds.json', 'w') as f:
-        f.write(str(decoded_creds))
+
+    file = open("/app/creds.json", "w")
+    file.write(str(decoded_creds))
+    file.close()
+    os.chmod("/app/creds.json", stat.S_IRUSR)
+    os.chmod("/app/creds.json", stat.S_IWUSR)
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/app/creds.json'
+
+    # with open('/app/creds.json', 'w') as f:
+    #     f.write(str(decoded_creds))
+    #     file.close()
+
 
     sslrootcert_var = os.environ.get('PG_SSLROOTCERT')
     sslrootcert_var = sslrootcert_var.replace('@', '=')
