@@ -3,5 +3,5 @@ flask==1.1.2
 torch
 pytest==6.2.2
 psycopg2-binary
-base64
+pybase64
 werkzeug.utils
