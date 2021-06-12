@@ -12,7 +12,7 @@ The application allows a user to perform the following operations user JSON base
 2) Fetch a list of all models currently present in the database
 3) Delete a model of choice from the database 
 4) Get a question answered by providing the question and context. User can even choose the model to answer the question
-5) Fetch a list of answered questions based on timestamp and model used
+5) Fetch a list of answered questions based on timestamp and models used
 
 ### Expected Request Routes
 1)  **Action 1 - Add a models** - This route allows a user to add a new model into the server and make it available for inference.<br>
