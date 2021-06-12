@@ -1,14 +1,14 @@
+import logging
 import os
+import stat
 import time
 import psycopg2
-from transformers.pipelines import pipeline
+import pybase64
 from flask import Flask
 from flask import request, jsonify
-import stat
-import pybase64
-from google.cloud import storage
-import logging
+from transformers.pipelines import pipeline
 from werkzeug.utils import secure_filename
+from google.cloud import storage
 
 # ---------------------#
 #  Create Flask App   #
@@ -278,8 +278,8 @@ if __name__ == '__main__':
     filecontents = os.environ.get('GCS_CREDS')
     decoded_creds = filecontents.replace('@', '=')
     decoded_creds = pybase64.b64decode(filecontents)
-    os.chmod("/app/creds.json", stat.S_IRUSR)
-    os.chmod("/app/creds.json", stat.S_IWUSR)
+    # os.chmod("/app/creds.json", stat.S_IRUSR)
+    # os.chmod("/app/creds.json", stat.S_IWUSR)
 
     file = open("/app/creds.json", "w")
     file.write(decoded_creds.decode("utf-8"))
