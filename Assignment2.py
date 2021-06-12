@@ -3,7 +3,7 @@ import os
 import stat
 import time
 import psycopg2
-import pybase64
+import base64
 from flask import Flask
 from flask import request, jsonify
 from transformers.pipelines import pipeline
@@ -277,7 +277,7 @@ if __name__ == '__main__':
     # Read env variables
     filecontents = os.environ.get('GCS_CREDS')
     decoded_creds = filecontents.replace('@', '=')
-    decoded_creds = pybase64.b64decode(filecontents)
+    decoded_creds = base64.b64decode(filecontents)
     # os.chmod("/app/creds.json", stat.S_IRUSR)
     # os.chmod("/app/creds.json", stat.S_IWUSR)
 
@@ -285,7 +285,7 @@ if __name__ == '__main__':
     file.write(decoded_creds.decode("utf-8"))
     file.close()
 
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/app/creds.json'
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = './app/creds.json'
 
     # with open('/app/creds.json', 'w') as f:
     #     f.write(str(decoded_creds))
