@@ -4,4 +4,4 @@ torch
 pytest==6.2.2
 psycopg2-binary
 pybase64
-werkzeug.utils
+werkzeug
