@@ -1,8 +1,4 @@
-# Mgmt590-Assignment2 - Creating REST API and deploying the application on google cloud
-### Submission Details
-|Name|PUID|
-|----|----|
-|Esha Kaushal| 0032356932|
+# Creating REST API and deploying the application on google cloud
 
 ### Application Description
 The application can be accessed using the URL - https://mgmt590-restapi-es7glm5rsq-uc.a.run.app
